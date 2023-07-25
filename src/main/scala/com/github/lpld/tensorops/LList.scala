@@ -1,35 +1,25 @@
 package com.github.lpld.tensorops
 import Nat.*
 
-/** Linked list that tracks its length on the type level*/
-sealed trait LList[+A, L <: Nat] :
-    type Length = L
+sealed trait LList[L <: Nat, +A] :
+  type Length = L
 
-    def map[B](f: A => B): LList[B, L] = this match
-        case LNil            => LNil
-        case #::(head, tail) => new #::(f(head), tail.map(f))
+  def #:[B >: A](b: B): LCons[L, B] = LCons(b, this)
 
-    def zipWith[B, C](other: LList[B, L], f: (A, B) => C): LList[C, L] = (this, other) match
-        case (#::(h1, t1), #::(h2, t2)) => new #::(f(h1, h2), t1.zipWith(t2, f))
-        case (LNil, LNil)               => LNil
+  def concat[B >: A, L2 <: Nat](that: LList[L2, B]): LList[L + L2, B]  
 
-    def #::[B >: A](b: B): LList[B, Nat.Succ[L]] = new #::(b, this)
+  def map[B](f: A => B): LList[L, B] = this match
+    case LNil            => LNil
+    case LCons(head, tail) => LCons(f(head), tail.map(f))
 
-    // def contact[L2 <: Nat, L3 <: Nat, A](l2: LList[A, L2])(using s: Sum[L, L2, L3]): LList[A, L3]
-    // def +++[B >: A, L2 <: Nat](bs: LList[B, L2])(using l: L + L2): LList[B, l.Result] = this match
-    //     case LNil => this
-    //     case #::(head, tail) => new #::(head, tail +++ bs)
+  def zipWith[B, C](other: LList[L, B], f: (A, B) => C): LList[L, C] = (this, other) match
+    case (LNil, LNil)               => LNil
+    case (LCons(h1, t1), LCons(h2, t2)) => new LCons(f(h1, h2), t1.zipWith(t2, f))
 
-    // def concat[L2 <: Nat, L3 <: Nat, B >: A](other: LList[B, L2])(using Sum[L, L2, L3]): LList[B, L3]
+case object LNil extends LList[_0, Nothing] :
+  override def concat[B >: Nothing, L2 <: Nat](that: LList[L2, B]): LList[L2, B] = that
 
-
-case object LNil extends LList[Nothing, Nat.Zero] 
 type LNil = LNil.type
-case class #::[+A, TailLength <: Nat](head: A, tail: LList[A, TailLength]) extends LList[A, Nat.Succ[TailLength]]
 
-    // def contact[L2 <: Nat, L3 <: Nat, A](l2: LList[A, L2]): LList[A, L3] = new #::(head, tail.contact(l2)(using ???))
-// object LList :
-    // type Concat[X <: LList[?, ?], Y <: LList[?, ?]] = X match 
-    //     case LNil               => Y
-    //     case #::[a, Zero]       => #::[a, Succ[Y#Length]]
-    //     case #::[a, Succ[l]]    => Concat[Concat[#::[a, l], Y], #::[a, _1]]
+case class LCons[TL <: Nat,  +A](head: A, tail: LList[TL, A]) extends LList[Succ[TL], A] :
+  override def concat[B >: A, L2 <: Nat](that: LList[L2, B]): LList[Succ[TL + L2], B] = LCons(head, tail.concat(that))

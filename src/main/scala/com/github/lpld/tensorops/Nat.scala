@@ -1,81 +1,47 @@
 package com.github.lpld.tensorops
 
-import Nat.*
-
-/** Represents a natural number in Peano encoding, i.e. each number is represented */
 enum Nat :
-  case Zero() extends Nat
-  case Succ[P <: Nat]() extends Nat
-
-  type Plus[That <: Nat] = +[this.type, That]#Result
+  case Zero()
+  case Succ[N <: Nat]()
 
 object Nat :
-
-  trait <[A <: Nat, B <: Nat]
+    
+  infix trait <[A <: Nat, B <: Nat]
   object < :
     def apply[A <: Nat, B <: Nat]( using lt: A < B ): A < B = lt
     given basic[A <: Nat]: <[_0, Succ[A]] with {}
     given inductive[A <: Nat, B <: Nat](using lt: A < B): <[Succ[A], Succ[B]] with {}
 
-  trait >[A <: Nat, B <: Nat]
+  infix trait >[A <: Nat, B <: Nat]
   object > :
     def apply[A <: Nat, B <: Nat]( using lt: A > B ): A > B = lt
     given inverseLt[A <: Nat, B <: Nat](using B < A): >[A, B] with {}
 
-  trait <=[A <: Nat, B <: Nat]
+  infix trait <=[A <: Nat, B <: Nat]
   object <= :
     def apply[A <: Nat, B <: Nat]( using le: A <= B ): A <= B = le
     given basic[A <: Nat]: <=[_0, A] with {}
     given inductive[A <: Nat, B <: Nat](using lt: A <= B): <=[Succ[A], Succ[B]] with {}
 
-  trait >=[A <: Nat, B <: Nat]
+  infix trait >=[A <: Nat, B <: Nat]
   object >= :
     def apply[A <: Nat, B <: Nat]( using le: A >= B ): A >= B = le
     given inverseLe[A <: Nat, B <: Nat](using B <= A): >=[A, B] with {}
 
-  trait Sum[A <: Nat, B <: Nat, C <: Nat]
-  object Sum :
-    given zeroPlusZero: Sum[_0, _0, _0] with {}
-    given zeroPlusA[A <: Nat]: Sum[_0, Succ[A], Succ[A]] with {}
-    given aPlusZero[A <: Nat]: Sum[Succ[A], _0, Succ[A]] with {}
+  infix type +[A <: Nat, B <: Nat] <: Nat = (A, B) match 
+    case (Zero, ?) => B
+    case (Succ[a], b) => Succ[a + b]
 
-    given aPlusB[A <: Nat, B <: Nat, C <: Nat](using Sum[A, B, C]): Sum[Succ[A], Succ[B], Succ[Succ[C]]] with {}
+  infix type *[A <: Nat, B <: Nat] <: Nat = (A, B) match 
+    case (Zero, ?) => Zero
+    case (Succ[a], b) => (a * b) + b
 
-  trait +[A <: Nat, B <: Nat] { type Result <: Nat }
-  object + :
-    def apply[A <: Nat, B <: Nat](using sum: +[A, B]) = sum
-    given result[A <: Nat, B <: Nat, C <: Nat](using Sum[A, B, C]): +[A, B] with { type Result = C }
-
-  trait -[A <: Nat, B <: Nat] { type Result <: Nat }
-  object - :
-    def apply[A <: Nat, B <: Nat](using diff: -[A, B]) = diff
-    given result[A <: Nat, B <: Nat, C <: Nat](using Sum[B, C, A]): -[A, B] with { type Result = C }
-
-  trait Mul[A <: Nat, B <: Nat, C <: Nat]
-  object Mul :
-    given zeroTimesZero: Mul[_0, _0, _0] with {}
-    given zeroTimesA[A <: Nat]: Mul[_0, Succ[A], _0] with {}
-    given aTimesZero[A <: Nat]: Mul[Succ[A], _0, _0] with {}
-
-    // (a + 1) * (b + 1) = ab + a + b + 1
-    given aTimesB[A <: Nat, B <: Nat, AB <: Nat, AB_A <: Nat, AB_A_B <: Nat](using Mul[A, B, AB], Sum[AB, A, AB_A], Sum[AB_A, B, AB_A_B]): Mul[Succ[A], Succ[B], Succ[AB_A_B]] with {}
-
-  trait *[A <: Nat, B <: Nat] { type Result <: Nat }
-  object * :
-    def apply[A <: Nat, B <: Nat](using mul: *[A, B]) = mul
-    given result[A <: Nat, B <: Nat, C <: Nat](using Mul[A, B, C]): *[A, B] with { type Result = C }
-
-  trait /[A <: Nat, B <: Nat] { type Result <: Nat }
-  object / :
-    def apply[A <: Nat, B <: Nat](using div: /[A, B]) = div
-    // Doesn't work!
-    given result[A <: Nat, B <: Nat, C <: Nat](using Mul[B, C, A]): /[A, B] with { type Result = C }
-
-  trait Min[A <: Nat, B <: Nat] { type Result <: Nat }
-  object Min :
-    given result[A <: Nat, B <: Nat](using A <= B): Min[A, B] with { type Result = A }
-
-    type R[A <: Nat, B <: Nat] = Min[A, B]#Result
+  infix type -[A <: Nat, B <: Nat] <: Nat = (A, B) match 
+    case (?, Zero) => A
+    case (Succ[a], Succ[b]) => a - b
+  
+  type Pred[N <: Nat] <: Nat = N match 
+    case Succ[n] => n
 
   type _0 = Zero
   type _1 = Succ[_0]
