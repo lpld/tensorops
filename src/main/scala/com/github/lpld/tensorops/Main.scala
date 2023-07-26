@@ -20,6 +20,6 @@ import TensorShape.*
 
   summon[_3 >= _3]
 
-  type shape1 = _15 +: _11 +: Scalar
+  type shape1 = _15 +: _11 +: SNil
 
   summon[Rank[shape1] =:= _2]
